@@ -34,12 +34,12 @@ jobs:
         run: |
           aws s3 sync frontend/dist s3://discordclonenew-frontend-luis --delete
 
-      - name: Invalidate CloudFront cache
-              run: |
-                DISTRIBUTION_ID=$(aws cloudformation describe-stack-resources \
-                  --stack-name discordclone-frontend \
-                  --region us-west-1 \
-                  --query "StackResources[?ResourceType=='AWS::CloudFront::Distribution'].PhysicalResourceId" \
-                  --output text)
-                echo "Invalidating distribution $DISTRIBUTION_ID"
-                aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/*"
+      - name: Invalidate CloudFront Cache
+        run: |
+          DISTRIBUTION_ID=$(aws cloudformation describe-stack-resources \
+            --stack-name discordclone-frontend \
+            --region us-west-1 \
+            --query "StackResources[?ResourceType=='AWS::CloudFront::Distribution'].PhysicalResourceId" \
+            --output text)
+          echo "Invalidating distribution $DISTRIBUTION_ID"
+          aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/*"
