@@ -10,7 +10,7 @@ Parameters:
   FrontendDomain:
     Type: String
     Default: ""
-    Description: CloudFront domain for production callbacks (ignored in dev)
+    Description: CloudFront domain for production callbacks (this is ignored in dev)
 
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
