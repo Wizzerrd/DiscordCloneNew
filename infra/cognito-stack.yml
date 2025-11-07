@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: DiscordClone Cognito authentication stack (multi-environment ready)
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, prod]
+    Description: Deployment environment (e.g., dev or prod)
+
+  FrontendDomain:
+    Type: String
+    Default: ""
+    Description: CloudFront domain for production callbacks (ignored in dev)
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+  HasFrontendDomain: !Not [!Equals [!Ref FrontendDomain, ""]]
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "discordclone-userpool-${Environment}"
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: false
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub "discordclone-client-${Environment}"
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      AllowedOAuthFlows: ["code", "implicit"]
+      AllowedOAuthScopes: ["email", "openid", "profile"]
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - !If
+          - IsProd
+          - !Sub "https://${FrontendDomain}/callback"
+          - http://localhost:5173/callback
+      LogoutURLs:
+        - !If
+          - IsProd
+          - !Sub "https://${FrontendDomain}"
+          - http://localhost:5173
+      SupportedIdentityProviders: [COGNITO]
+      
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub "discordclone-auth-${Environment}-${AWS::AccountId}"
+      UserPoolId: !Ref UserPool
+
+Outputs:
+  Environment:
+    Value: !Ref Environment
+    Description: Environment name for this Cognito stack
+
+  UserPoolId:
+    Value: !Ref UserPool
+    Description: Cognito User Pool ID
+
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+    Description: Cognito App Client ID
+
+  UserPoolDomain:
+    Value: !Sub "https://discordclone-auth-${Environment}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com"
+    Description: Hosted Cognito login domain URL
