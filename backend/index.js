@@ -4,8 +4,23 @@ import { verifyCognitoToken } from './verifyCognitoToken.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim())
+    : ["http://localhost:5173"];
+
 const app = express();
-app.use(cors({ origin: 'http://localhost:5173' }));
+
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            if (allowedOrigins.includes(origin)) return callback(null, true);
+            return callback(new Error("CORS: Not allowed"));
+        },
+        credentials: true,
+    })
+);
+
+app.get("/health", (req, res) => res.status(200).send("OK"));
 
 app.get('/api/protected', async (req, res) => {
     const authHeader = req.headers.authorization;
