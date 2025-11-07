@@ -4,6 +4,9 @@ export default function Dashboard() {
     const [user, setUser] = useState(null);
     const [error, setError] = useState(null);
 
+    // ✅ Read API base URL from environment variable (fallback to localhost)
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
     useEffect(() => {
         const idToken = localStorage.getItem('id_token');
 
@@ -14,7 +17,7 @@ export default function Dashboard() {
 
         async function verifyToken() {
             try {
-                const res = await fetch('http://localhost:8000/api/protected', {
+                const res = await fetch(`${API_BASE}/api/protected`, {
                     headers: { Authorization: `Bearer ${idToken}` },
                 });
 
@@ -28,7 +31,7 @@ export default function Dashboard() {
         }
 
         verifyToken();
-    }, []);
+    }, [API_BASE]);
 
     if (error)
         return (
