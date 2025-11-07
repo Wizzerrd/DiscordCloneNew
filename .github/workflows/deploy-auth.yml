@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'infra/cognito-stack.yml'   # Only redeploy if infra changes
+  workflow_dispatch:                # ✅ allows manual trigger from the Actions tab
 
 jobs:
   deploy-auth:
@@ -15,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # ✅ Ensure we use AWS CLI v2 (GitHub runners ship with v1, which exits 255)
+      # ✅ Ensure we use AWS CLI v2
       - name: Upgrade AWS CLI to v2
         run: |
           sudo apt-get update -y
@@ -25,7 +26,7 @@ jobs:
           sudo ./aws/install --update
           aws --version
 
-      # ✅ Configure credentials for the discordclone-ci IAM user
+      # ✅ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -33,7 +34,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-1
 
-      # ✅ Deploy the Cognito CloudFormation stack
+      # ✅ Deploy the Cognito stack
       - name: Deploy Cognito stack
         run: |
           echo "Deploying Cognito stack..."
