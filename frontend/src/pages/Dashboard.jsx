@@ -12,11 +12,6 @@ export default function Dashboard() {
     const [error, setError] = useState(null);
     const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-    // Try to load session immediately
-    // useEffect(() => {
-    //     dispatch(fetchSession());
-    // }, [dispatch]);
-
     useEffect(() => {
         if (!loading && !user) navigate("/home");
         if (user) setUsername(user.username || "");
