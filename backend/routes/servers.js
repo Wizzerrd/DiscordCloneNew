@@ -31,7 +31,14 @@ router.post("/", requireAuth, async (req, res) => {
             role: "owner",
         });
 
-        res.status(201).json(newServer);
+        // ✅ Return enriched object including role
+        res.status(201).json({
+            id: newServer.id,
+            name: newServer.name,
+            iconUrl: newServer.iconUrl,
+            ownerId: newServer.ownerId,
+            role: "owner",
+        });
     } catch (err) {
         console.error("Create server failed:", err);
         res.status(500).json({ error: "Database error" });

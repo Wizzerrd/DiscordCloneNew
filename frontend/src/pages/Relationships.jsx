@@ -7,6 +7,7 @@ import {
     removeFriend,
     blockUser,
     unblockUser,
+    cancelRequest,
 } from "../features/relationshipsSlice";
 
 export default function Relationships() {
@@ -26,20 +27,15 @@ export default function Relationships() {
         if (!targetId.trim()) return alert("Enter a valid user ID or email");
         dispatch(sendFriendRequest(targetId.trim()))
             .unwrap()
-            .then(() => {
-                alert("✅ Friend request sent");
-                setTargetId("");
-            })
-            .catch((err) => {
-                console.error(err);
-                alert("❌ Failed to send request");
-            });
+            .then(() => setTargetId(""))
+            .catch((err) => alert(`❌ ${err}`));
     };
 
     const handleAccept = (senderId) => dispatch(acceptRequest(senderId));
     const handleRemove = (targetId) => dispatch(removeFriend(targetId));
     const handleBlock = (targetId) => dispatch(blockUser(targetId));
     const handleUnblock = (targetId) => dispatch(unblockUser(targetId));
+    const handleCancel = (targetId) => dispatch(cancelRequest(targetId));
 
     if (loading) return <p style={{ textAlign: "center" }}>Loading...</p>;
     if (error) return <p style={{ textAlign: "center", color: "red" }}>{error}</p>;
@@ -90,6 +86,7 @@ export default function Relationships() {
                             key={`${r.id}-pending`}
                             name={r.username || r.email}
                             status="Pending"
+                            onCancel={() => handleCancel(r.id)} // 👈 new button
                             onBlock={() => handleBlock(r.id)}
                         />
                     ))
@@ -140,7 +137,7 @@ function Section({ title, children }) {
     );
 }
 
-function RelationshipRow({ name, status, onAccept, onRemove, onBlock, onUnblock }) {
+function RelationshipRow({ name, status, onAccept, onRemove, onBlock, onUnblock, onCancel }) {
     return (
         <div
             style={{
@@ -158,6 +155,7 @@ function RelationshipRow({ name, status, onAccept, onRemove, onBlock, onUnblock 
             </div>
             <div style={{ display: "flex", gap: "0.5rem" }}>
                 {onAccept && <button onClick={onAccept}>Accept</button>}
+                {onCancel && <button onClick={onCancel}>Cancel</button>}
                 {onRemove && <button onClick={onRemove}>Remove</button>}
                 {onBlock && <button onClick={onBlock}>Block</button>}
                 {onUnblock && <button onClick={onUnblock}>Unblock</button>}
@@ -165,3 +163,4 @@ function RelationshipRow({ name, status, onAccept, onRemove, onBlock, onUnblock 
         </div>
     );
 }
+

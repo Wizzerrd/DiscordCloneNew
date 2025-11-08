@@ -1,45 +1,25 @@
 import { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
+import { fetchServers, createServer } from "../features/serversSlice";
 
 export default function Servers() {
-    const [servers, setServers] = useState([]);
+    const dispatch = useDispatch();
+    const { list: servers, loading, error } = useSelector((state) => state.servers);
     const [newName, setNewName] = useState("");
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
-    const loadServers = async () => {
-        try {
-            const res = await fetch(`${API_BASE}/api/servers/mine`, { credentials: "include" });
-            if (!res.ok) throw new Error("Failed to fetch servers");
-            const data = await res.json();
-            setServers(data);
-        } catch (err) {
-            console.error("Failed to load servers:", err);
-        }
-    };
-
-    const createServer = async () => {
-        if (!newName.trim()) return;
-        try {
-            const res = await fetch(`${API_BASE}/api/servers`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ name: newName }),
-            });
-            if (res.ok) {
-                setNewName("");
-                loadServers();
-            } else {
-                console.error("Failed to create server");
-            }
-        } catch (err) {
-            console.error("Error creating server:", err);
-        }
-    };
 
     useEffect(() => {
-        loadServers();
-    }, []);
+        dispatch(fetchServers());
+    }, [dispatch]);
+
+    const handleCreate = async () => {
+        if (!newName.trim()) return;
+        await dispatch(createServer(newName));
+        setNewName("");
+    };
+
+    if (loading) return <p style={{ textAlign: "center" }}>Loading servers...</p>;
+    if (error) return <p style={{ textAlign: "center", color: "red" }}>{error}</p>;
 
     return (
         <div style={{ maxWidth: 600, margin: "3rem auto", textAlign: "center" }}>
@@ -51,7 +31,7 @@ export default function Servers() {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                 />
-                <button onClick={createServer} style={{ marginLeft: "1rem" }}>
+                <button onClick={handleCreate} style={{ marginLeft: "1rem" }}>
                     Create
                 </button>
             </div>
