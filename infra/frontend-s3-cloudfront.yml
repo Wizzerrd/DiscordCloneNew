@@ -16,7 +16,7 @@ Resources:
         ErrorDocument: index.html
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
-        BlockPublicPolicy: true
+        BlockPublicPolicy: false   # ✅ allow CloudFront OAI bucket policy to work
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
       OwnershipControls:
@@ -61,6 +61,7 @@ Resources:
           CachedMethods: ["GET", "HEAD"]
           ForwardedValues:
             QueryString: false
+        # ✅ React SPA fallback for /callback, /dashboard, etc.
         CustomErrorResponses:
           - ErrorCode: 403
             ResponseCode: 200
@@ -78,6 +79,7 @@ Outputs:
   BucketName:
     Description: Name of the S3 bucket hosting the static site
     Value: !Ref BucketName
+
   CloudFrontURL:
     Description: CloudFront URL for the hosted React app
     Value: !Sub "https://${CloudFrontDistribution.DomainName}"
