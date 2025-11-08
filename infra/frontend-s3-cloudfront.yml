@@ -30,18 +30,21 @@ Resources:
         Comment: Access identity for CloudFront to read from S3
 
   BucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref FrontendBucket
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Sid: AllowCloudFrontRead
-            Effect: Allow
-            Principal:
-              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
-            Action: "s3:GetObject"
-            Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+  Type: AWS::S3::BucketPolicy
+  Properties:
+    Bucket: !Ref FrontendBucket
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Sid: AllowCloudFrontRead
+          Effect: Allow
+          Principal:
+            CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+          Action: 
+            - s3:GetObject
+            - s3:GetObjectVersion
+          Resource: 
+            - !Sub "arn:aws:s3:::${BucketName}/*"
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
