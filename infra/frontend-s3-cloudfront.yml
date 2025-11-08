@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: DiscordClone frontend static site hosting (S3 + CloudFront)
+Description: DiscordClone frontend static site hosting (S3 + CloudFront, SPA-ready)
 
 Parameters:
   BucketName:
@@ -16,9 +16,9 @@ Resources:
         ErrorDocument: index.html
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
-        BlockPublicPolicy: false   # ✅ allow CloudFront OAI bucket policy to work
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+        BlockPublicPolicy: false   # ✅ allow bucket policy to be applied
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerPreferred
@@ -27,30 +27,30 @@ Resources:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: Access identity for CloudFront to read from S3
+        Comment: OAI for CloudFront to access S3
 
   BucketPolicy:
-  Type: AWS::S3::BucketPolicy
-  Properties:
-    Bucket: !Ref FrontendBucket
-    PolicyDocument:
-      Version: "2012-10-17"
-      Statement:
-        - Sid: AllowCloudFrontRead
-          Effect: Allow
-          Principal:
-            CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
-          Action: 
-            - s3:GetObject
-            - s3:GetObjectVersion
-          Resource: 
-            - !Sub "arn:aws:s3:::${BucketName}/*"
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource: !Sub "arn:aws:s3:::${BucketName}/*"
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
         Enabled: true
+        Comment: DiscordCloneNew frontend distribution
         DefaultRootObject: index.html
         Origins:
           - Id: FrontendOrigin
@@ -64,7 +64,7 @@ Resources:
           CachedMethods: ["GET", "HEAD"]
           ForwardedValues:
             QueryString: false
-        # ✅ React SPA fallback for /callback, /dashboard, etc.
+          MinTTL: 0   # ✅ ensures errors aren’t cached incorrectly
         CustomErrorResponses:
           - ErrorCode: 403
             ResponseCode: 200
@@ -76,13 +76,11 @@ Resources:
           CloudFrontDefaultCertificate: true
         PriceClass: PriceClass_100
         HttpVersion: http2
-        Comment: DiscordCloneNew frontend distribution
 
 Outputs:
   BucketName:
     Description: Name of the S3 bucket hosting the static site
     Value: !Ref BucketName
-
   CloudFrontURL:
     Description: CloudFront URL for the hosted React app
     Value: !Sub "https://${CloudFrontDistribution.DomainName}"
