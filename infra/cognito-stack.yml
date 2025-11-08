@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: DiscordClone Cognito authentication stack (multi-environment ready)
+Description: DiscordClone Cognito authentication stack (multi-environment, backend-managed auth)
 
 Parameters:
   Environment:
@@ -10,13 +10,14 @@ Parameters:
   FrontendDomain:
     Type: String
     Default: ""
-    Description: CloudFront domain for production callbacks (this is ignored in dev)
+    Description: CloudFront domain for production logout redirect
 
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
   HasFrontendDomain: !Not [!Equals [!Ref FrontendDomain, ""]]
 
 Resources:
+  # === Cognito User Pool ===
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -28,27 +29,29 @@ Resources:
           Required: true
           Mutable: false
 
+  # === Cognito App Client (authorization code flow only) ===
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       ClientName: !Sub "discordclone-client-${Environment}"
       UserPoolId: !Ref UserPool
       GenerateSecret: false
-      AllowedOAuthFlows: ["code", "implicit"]
-      AllowedOAuthScopes: ["email", "openid", "profile"]
+      AllowedOAuthFlows: ["code"]
       AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes: ["email", "openid", "profile"]
       CallbackURLs:
         - !If
           - IsProd
-          - !Sub "https://${FrontendDomain}/callback"
-          - http://localhost:5173/callback
+          - !Sub "https://${FrontendDomain}/auth/callback"
+          - http://localhost:8000/auth/callback
       LogoutURLs:
         - !If
           - IsProd
           - !Sub "https://${FrontendDomain}"
           - http://localhost:5173
       SupportedIdentityProviders: [COGNITO]
-      
+
+  # === Cognito Hosted Domain ===
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
