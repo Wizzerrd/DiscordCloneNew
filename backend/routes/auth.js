@@ -52,12 +52,14 @@ router.get('/callback', async (req, res) => {
         // Set secure cookie
         res.cookie('id_token', tokens.id_token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 1000, // 1 hour
+            secure: false,       // true in prod (https)
+            sameSite: 'none',    // required for localhost:5173 ↔ localhost:8000
+            maxAge: 60 * 60 * 1000,
         });
 
-        res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+
+
+        res.redirect(`${process.env.FRONTEND_URL}`);
     } catch (err) {
         console.error('Auth callback error:', err);
         res.status(500).send('Authentication failed');

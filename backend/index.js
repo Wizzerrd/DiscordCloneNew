@@ -5,7 +5,9 @@ import dotenv from 'dotenv';
 
 import { verifyCognitoToken } from './verifyCognitoToken.js';
 import userRoutes from './routes/users.js';
+import serverRoutes from './routes/servers.js'
 import authRoutes from './routes/auth.js';
+import relationshipRoutes from './routes/relationships.js'
 
 dotenv.config();
 
@@ -50,6 +52,8 @@ app.get('/api/protected', async (req, res) => {
 // === ROUTES ===
 app.use('/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/servers', serverRoutes);
+app.use('/api/relationships', relationshipRoutes);
 
 const port = process.env.PORT || 8000;
 app.listen(port, () => console.log(`✅ Backend running on port ${port}`));

@@ -1,11 +1,10 @@
-import { pgTable, varchar, text, timestamp } from 'drizzle-orm/pg-core';
-import { users } from './users.js';
-import { servers } from './servers.js';
+import { pgTable, varchar, timestamp, primaryKey } from "drizzle-orm/pg-core";
 
-export const serverMembers = pgTable('server_members', {
-    id: varchar('id').primaryKey(),
-    userId: varchar('user_id').notNull().references(() => users.id),
-    serverId: varchar('server_id').notNull().references(() => servers.id),
-    role: text('role').default('member'),
-    joinedAt: timestamp('joined_at').defaultNow(),
-});
+export const serverMembers = pgTable("server_members", {
+    serverId: varchar("server_id").notNull(),
+    userId: varchar("user_id").notNull(),
+    role: varchar("role").default("member"), // roles: owner, admin, member
+    joinedAt: timestamp("joined_at").defaultNow(),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.serverId, table.userId] }),
+}));

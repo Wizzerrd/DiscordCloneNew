@@ -3,3 +3,4 @@ export * from './servers.js';
 export * from './serverMembers.js';
 export * from './channels.js';
 export * from './messages.js';
+export * from './relationships.js'
