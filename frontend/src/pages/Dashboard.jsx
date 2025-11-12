@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchSession, logout } from "../features/authSlice";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +40,7 @@ export default function Dashboard() {
         return <p style={{ textAlign: "center", marginTop: "3rem" }}>Loading...</p>;
 
     if (!user) return null; // redirect handled above
-    
+
     return (
         <div style={{ maxWidth: 600, margin: "3rem auto", textAlign: "center" }}>
             <h1>Welcome 👋</h1>
@@ -64,6 +65,19 @@ export default function Dashboard() {
                     {saving ? "Saving..." : "Save"}
                 </button>
                 {error && <p style={{ color: "red" }}>{error}</p>}
+            </div>
+
+            <div>
+                <Link to={"/relationships"}>
+                    <button>
+                        Relationships
+                    </button>
+                </Link>
+                <Link to={"/servers"}>
+                    <button>
+                        Servers
+                    </button>
+                </Link>
             </div>
 
             <button

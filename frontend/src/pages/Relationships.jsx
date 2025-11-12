@@ -9,6 +9,7 @@ import {
     unblockUser,
     cancelRequest,
 } from "../features/relationshipsSlice";
+import { Link } from "react-router-dom";
 
 export default function Relationships() {
     const dispatch = useDispatch();
@@ -47,6 +48,8 @@ export default function Relationships() {
 
     return (
         <div style={{ maxWidth: 600, margin: "3rem auto", textAlign: "center" }}>
+            <Link to="/dashboard">← Back to Dashboard</Link>
+
             <h1>👥 Relationships</h1>
 
             {/* === Add friend form === */}

@@ -23,6 +23,8 @@ export default function Servers() {
 
     return (
         <div style={{ maxWidth: 600, margin: "3rem auto", textAlign: "center" }}>
+            <Link to="/dashboard">← Back to Dashboard</Link>
+
             <h1>🛠️ My Servers</h1>
 
             <div style={{ marginBottom: "2rem" }}>
