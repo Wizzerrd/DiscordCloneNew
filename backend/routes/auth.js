@@ -1,76 +1,79 @@
-    import express from 'express';
-    import fetch from 'node-fetch';
-    import { verifyCognitoToken } from '../verifyCognitoToken.js';
-    import { db } from '../db.js';
-    import { users } from '../schema/users.js';
+import express from 'express';
+import fetch from 'node-fetch';
+import { verifyCognitoToken } from '../verifyCognitoToken.js';
+import { db } from '../db.js';
+import { users } from '../schema/users.js';
 
-    const ENV = process.env.NODE_ENV
-    
-    const router = express.Router();
+const ENV = process.env.NODE_ENV || "development"
+const IS_PROD = ENV === "production"
 
-    // === LOGIN ===
-    router.get('/login', (req, res) => {
-        const loginUrl = `https://${process.env.COGNITO_DOMAIN}/login?client_id=${process.env.COGNITO_CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(process.env.COGNITO_REDIRECT_URI)}`;
-        res.redirect(loginUrl);
-    });
+const router = express.Router();
 
-    // === CALLBACK ===
-    router.get('/callback', async (req, res) => {
-        const { code } = req.query;
-        if (!code) return res.status(400).send('Missing authorization code');
+// === LOGIN ===
+router.get('/login', (req, res) => {
+    const loginUrl = `https://${process.env.COGNITO_DOMAIN}/login?client_id=${process.env.COGNITO_CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(process.env.COGNITO_REDIRECT_URI)}`;
+    res.redirect(loginUrl);
+});
 
-        try {
-            const params = new URLSearchParams({
-                grant_type: 'authorization_code',
-                client_id: process.env.COGNITO_CLIENT_ID,
-                redirect_uri: process.env.COGNITO_REDIRECT_URI,
-                code,
-            });
+// === CALLBACK ===
+router.get('/callback', async (req, res) => {
+    const { code } = req.query;
+    if (!code) return res.status(400).send('Missing authorization code');
 
-            const response = await fetch(`https://${process.env.COGNITO_DOMAIN}/oauth2/token`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params,
-            });
+    try {
+        const params = new URLSearchParams({
+            grant_type: 'authorization_code',
+            client_id: process.env.COGNITO_CLIENT_ID,
+            redirect_uri: process.env.COGNITO_REDIRECT_URI,
+            code,
+        });
 
-            if (!response.ok) {
-                const text = await response.text();
-                console.error('Token exchange failed:', text);
-                return res.status(500).send('Token exchange failed');
-            }
+        const response = await fetch(`https://${process.env.COGNITO_DOMAIN}/oauth2/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params,
+        });
 
-            const tokens = await response.json();
-            const decoded = await verifyCognitoToken(tokens.id_token);
-
-            // Sync user record
-            const { sub, email } = decoded;
-            await db.insert(users)
-                .values({ id: sub, email, lastLoginAt: new Date() })
-                .onConflictDoUpdate({
-                    target: users.id,
-                    set: { email, lastLoginAt: new Date() },
-                });
-
-            // Set secure cookie
-            res.cookie('id_token', tokens.id_token, {
-                httpOnly: true,
-                secure: ENV === "production" ? true : false,    // true in prod (https)
-                sameSite: ENV === "production" ? "none" : "lax",    // required for localhost:5173 ↔ localhost:8000
-                maxAge: 60 * 60 * 1000,
-            });
-
-            res.redirect(`${process.env.FRONTEND_URL}`);
-        } catch (err) {
-            console.error('Auth callback error:', err);
-            res.status(500).send('Authentication failed');
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Token exchange failed:', text);
+            return res.status(500).send('Token exchange failed');
         }
-    });
 
-    // === LOGOUT ===
-    router.get('/logout', (req, res) => {
-        res.clearCookie('id_token');
-        const logoutUrl = `https://${process.env.COGNITO_DOMAIN}/logout?client_id=${process.env.COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(process.env.FRONTEND_URL)}`;
-        res.redirect(logoutUrl);
-    });
+        const tokens = await response.json();
+        const decoded = await verifyCognitoToken(tokens.id_token);
 
-    export default router;
+        // Sync user record
+        const { sub, email } = decoded;
+        await db.insert(users)
+            .values({ id: sub, email, lastLoginAt: new Date() })
+            .onConflictDoUpdate({
+                target: users.id,
+                set: { email, lastLoginAt: new Date() },
+            });
+
+        // Set secure cookie
+        res.cookie("id_token", tokens.id_token, {
+            httpOnly: true,
+            secure: IS_PROD,
+            sameSite: IS_PROD ? "none" : "lax",
+            maxAge: 60 * 60 * 1000,
+        });
+
+        console.log(`✅ Auth success: ${email} (${sub}) — cookie set (${IS_PROD ? "secure" : "insecure"})`);
+
+        res.redirect(req.query.redirect || process.env.FRONTEND_URL);
+    } catch (err) {
+        console.error('Auth callback error:', err);
+        res.status(500).send('Authentication failed');
+    }
+});
+
+// === LOGOUT ===
+router.get('/logout', (req, res) => {
+    res.clearCookie('id_token');
+    const logoutUrl = `https://${process.env.COGNITO_DOMAIN}/logout?client_id=${process.env.COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(process.env.FRONTEND_URL)}`;
+    res.redirect(logoutUrl);
+});
+
+export default router;

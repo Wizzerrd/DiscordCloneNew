@@ -13,7 +13,6 @@ export default function Dashboard() {
     const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
     useEffect(() => {
-        if (!loading && !user) navigate("/home");
         if (user) setUsername(user.username || "");
     }, [loading, user, navigate]);
 
@@ -40,7 +39,7 @@ export default function Dashboard() {
         return <p style={{ textAlign: "center", marginTop: "3rem" }}>Loading...</p>;
 
     if (!user) return null; // redirect handled above
-
+    
     return (
         <div style={{ maxWidth: 600, margin: "3rem auto", textAlign: "center" }}>
             <h1>Welcome 👋</h1>
