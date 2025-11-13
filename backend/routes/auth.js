@@ -60,8 +60,6 @@ router.get('/callback', async (req, res) => {
             maxAge: 60 * 60 * 1000,
         });
 
-        console.log(`✅ Auth success: ${email} (${sub}) — cookie set (${IS_PROD ? "secure" : "insecure"})`);
-
         res.redirect(req.query.redirect || process.env.FRONTEND_URL);
     } catch (err) {
         console.error('Auth callback error:', err);
