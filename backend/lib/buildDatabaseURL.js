@@ -34,5 +34,6 @@ export async function buildDatabaseURL() {
 
     // Build full PostgreSQL connection URL
     const url = `postgresql://${encodeURIComponent(secret.username)}:${encodeURIComponent(secret.password)}@${host}:${port}/${dbName}`;
+
     return url;
 }
