@@ -1,14 +1,27 @@
-import pkg from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
-const { Pool } = pkg;
-
+import pg from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { buildDatabaseURL } from "./lib/buildDatabaseURL.js";
 
-const DATABASE_URL = await buildDatabaseURL();
+let poolInstance;   // global cached instance
+let drizzleInstance; // drizzle wrapper cached as well
 
-const pool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: { rejectUnauthorized: false }, // RDS requires SSL
-});
+export async function getDb() {
+    // If already initialized, reuse it
+    if (drizzleInstance) return drizzleInstance;
 
-export const db = drizzle(pool);
+    const DATABASE_URL = await buildDatabaseURL(DATABASE_NAME);
+
+    if (!poolInstance) {
+        poolInstance = new pg.Pool({
+            connectionString: DATABASE_URL,
+            max: 4,                 // good for Lambda
+            idleTimeoutMillis: 30000,
+            ssl: {
+                rejectUnauthorized: false, // typical for RDS + Lambda
+            },
+        });
+    }
+
+    drizzleInstance = drizzle(poolInstance);
+    return drizzleInstance;
+}

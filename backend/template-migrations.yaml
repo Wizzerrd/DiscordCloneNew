@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: DiscordClone - Database Migrations Lambda
+
+# ===========================================================
+# PARAMETERS
+# ===========================================================
+Parameters:
+  VpcId:
+    Type: String
+    Description: VPC where the Lambda will run
+
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: Private subnets for Lambda access to RDS
+
+  LambdaToRdsSecurityGroupId:
+    Type: String
+    Description: Security Group used by Lambda to reach RDS
+
+  NodeEnv:
+    Type: String
+    Default: "dev"
+
+  DatabaseHost:
+    Type: String
+    Description: RDS endpoint hostname (NOT full URL)
+
+  DatabaseName:
+    Type: String
+    Description: RDS database name
+
+  DbSecretArn:
+    Type: String
+    Description: ARN of Secrets Manager entry containing username/password
+
+
+# ===========================================================
+# RESOURCES
+# ===========================================================
+Resources:
+
+  # -------------------------------
+  # Migrations Lambda Function
+  # -------------------------------
+  MigrationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: migration-lambda.handler
+      CodeUri: .
+      Runtime: nodejs20.x
+      Timeout: 300
+      MemorySize: 512
+
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaToRdsSecurityGroupId
+        SubnetIds: !Ref SubnetIds
+
+      Environment:
+        Variables:
+          NODE_ENV: !Ref NodeEnv
+          DATABASE_URL: !Ref DatabaseHost
+          DATABASE_NAME: !Ref DatabaseName
+          DB_SECRET_ARN: !Ref DbSecretArn
+
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "secretsmanager:GetSecretValue"
+              Resource: !Ref DbSecretArn
+
+# ===========================================================
+# OUTPUTS
+# ===========================================================
+Outputs:
+  MigrationsFunctionName:
+    Description: Name of the migrations Lambda function
+    Value: !Ref MigrationsFunction
+
+  InvokeCommand:
+    Description: AWS CLI command to manually run migrations
+    Value: !Sub |
+      aws lambda invoke --function-name ${MigrationsFunction} out.json
+

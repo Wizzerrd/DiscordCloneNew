@@ -1,21 +1,14 @@
 // lib/buildDatabaseURL.js
 import { getSecret } from "./secrets.js";
+import dotenv from 'dotenv';
 
+dotenv.config()
 /**
  * Build a PostgreSQL connection URL.
  * - In dev: use DATABASE_URL from .env directly.
  * - In prod: combine RDS host env var with credentials from AWS Secrets Manager.
  */
 export async function buildDatabaseURL() {
-    const env = process.env.NODE_ENV || "development";
-
-    // === Local development ===
-    if (env !== "production") {
-        if (!process.env.DATABASE_URL) {
-            throw new Error("DATABASE_URL missing in development environment");
-        }
-        return process.env.DATABASE_URL;
-    }
 
     // === Production (App Runner) ===
     const secretArn = process.env.DB_SECRET_ARN;
@@ -24,7 +17,8 @@ export async function buildDatabaseURL() {
     const port = 5432;
 
     if (!secretArn) throw new Error("DB_SECRET_ARN not set in environment");
-    if (!host) throw new Error("DATABASE_URL (host) missing in production environment");
+    if (!host) throw new Error("DATABASE_URL (host) not set in environment");
+    if (!dbName) throw new Error("DATABASE_NAME not set in environment")
 
     const secret = await getSecret(secretArn);
 

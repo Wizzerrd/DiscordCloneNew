@@ -14,7 +14,7 @@ dotenv.config();
 const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
     : ['http://localhost:5173'];
-    
+
 const app = express();
 
 app.use(express.json());
@@ -23,7 +23,8 @@ app.use(cookieParser());
 app.use(
     cors({
         origin(origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin)) return callback(null, true);
             return callback(new Error('CORS: Not allowed'));
         },
         credentials: true,
@@ -55,5 +56,11 @@ app.use('/api/users', userRoutes);
 app.use('/api/servers', serverRoutes);
 app.use('/api/relationships', relationshipRoutes);
 
-const port = process.env.PORT || 8000;
-app.listen(port, () => console.log(`✅ Backend running on port ${port}`));
+const IS_LAMBDA = process.env.IS_LAMBDA || "true"
+
+if (IS_LAMBDA == "false") {
+    const port = process.env.PORT || 8000;
+    app.listen(port, () => console.log(`✅ Backend running on port ${port}`));
+}
+
+export default app;

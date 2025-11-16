@@ -1,9 +1,10 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import { verifyCognitoToken } from '../verifyCognitoToken.js';
-import { db } from '../db.js';
+import { getDb } from '../db.js';
 import { users } from '../schema/users.js';
 
+const dbPromise = getDb()
 const ENV = process.env.NODE_ENV || "development"
 const IS_PROD = ENV === "production"
 
@@ -21,6 +22,7 @@ router.get('/callback', async (req, res) => {
     if (!code) return res.status(400).send('Missing authorization code');
 
     try {
+        const db = await dbPromise
         const params = new URLSearchParams({
             grant_type: 'authorization_code',
             client_id: process.env.COGNITO_CLIENT_ID,

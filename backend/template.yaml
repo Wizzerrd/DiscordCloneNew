@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Discord Clone Backend (Express on Lambda)
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 15
+    MemorySize: 512
+
+Parameters:
+  VpcId:
+    Type: String
+  SubnetIds:
+    Type: CommaDelimitedList
+  RdsSecurityGroupId:
+    Type: String
+
+Resources:
+
+  # ------------------------------
+  # Security group for Lambda
+  # ------------------------------
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow Lambda access to RDS
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref LambdaSecurityGroup # self-referencing (warm re-use)
+
+  # ------------------------------
+  # Lambda function running Express
+  # ------------------------------
+  BackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.handler
+      CodeUri: .
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds: !Ref SubnetIds
+      Environment:
+        Variables:
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+          COGNITO_DOMAIN: !Ref CognitoDomain
+          COGNITO_CLIENT_ID: !Ref CognitoClientId
+          COGNITO_REDIRECT_URI: !Ref CognitoRedirectUri
+          FRONTEND_URL: !Ref FrontendUrl
+      Events:
+        ApiEndpoint:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+  # ------------------------------
+  # API Outputs
+  # ------------------------------
+Outputs:
+  ApiUrl:
+    Description: Invoke URL for the API Gateway endpoint
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

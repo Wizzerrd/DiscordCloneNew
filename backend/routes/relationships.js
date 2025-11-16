@@ -1,5 +1,5 @@
 import express from "express";
-import { db } from "../db.js";
+import { getDb } from "../db.js";
 import { relationships } from "../schema/relationships.js";
 import { users } from "../schema/users.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -7,6 +7,7 @@ import { eq, and, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 const router = express.Router();
+const dbPromise = getDb()
 
 /**
  * Send friend request
@@ -22,6 +23,7 @@ router.post("/send", requireAuth, async (req, res) => {
     if (receiverId === sub) return res.status(400).json({ error: "Cannot friend yourself" });
 
     try {
+        const db = await dbPromise
         // ✅ 1. Confirm target exists
         const [targetUser] = await db
             .select()
@@ -138,6 +140,7 @@ router.post("/accept", requireAuth, async (req, res) => {
     if (!senderId) return res.status(400).json({ error: "senderId required" });
 
     try {
+        const db = await dbPromise
         const [incoming] = await db
             .select()
             .from(relationships)
@@ -185,6 +188,7 @@ router.post("/cancel", requireAuth, async (req, res) => {
     if (!targetId) return res.status(400).json({ error: "targetId required" });
 
     try {
+        const db = await dbPromise
         const deleted = await db
             .delete(relationships)
             .where(
@@ -217,6 +221,7 @@ router.post("/remove", requireAuth, async (req, res) => {
     if (!targetId) return res.status(400).json({ error: "targetId required" });
 
     try {
+        const db = await dbPromise
         await db.delete(relationships).where(
             and(
                 or(
@@ -244,6 +249,7 @@ router.post("/block", requireAuth, async (req, res) => {
     if (!targetId) return res.status(400).json({ error: "targetId required" });
 
     try {
+        const db = await dbPromise
         await db.delete(relationships).where(
             and(
                 or(
@@ -289,6 +295,7 @@ router.post("/unblock", requireAuth, async (req, res) => {
     if (!targetId) return res.status(400).json({ error: "targetId required" });
 
     try {
+        const db = await dbPromise
         await db.delete(relationships).where(
             and(
                 eq(relationships.senderId, sub),
@@ -308,6 +315,7 @@ router.get("/list", requireAuth, async (req, res) => {
     const { sub } = req.user;
 
     try {
+        const db = await dbPromise
         const senderUser = alias(users, "sender_user");
         const receiverUser = alias(users, "receiver_user");
 

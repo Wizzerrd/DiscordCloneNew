@@ -1,11 +1,12 @@
 import express from "express";
-import { db } from "../db.js";
+import { getDb } from "../db.js";
 import { servers } from "../schema/servers.js";
 import { serverMembers } from "../schema/serverMembers.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { eq, and } from "drizzle-orm";
 
 const router = express.Router();
+const dbPromise = getDb()
 
 /**
  * Create a new server
@@ -19,6 +20,7 @@ router.post("/", requireAuth, async (req, res) => {
     }
 
     try {
+        const db = await dbPromise
         const [newServer] = await db.insert(servers).values({
             name,
             ownerId: sub,
@@ -52,6 +54,7 @@ router.get("/mine", requireAuth, async (req, res) => {
     const { sub } = req.user;
 
     try {
+        const db = await dbPromise
         const myServers = await db.execute(`
       SELECT s.id, s.name, s.owner_id, s.icon_url, sm.role
       FROM servers s
@@ -74,6 +77,7 @@ router.post("/:serverId/join", requireAuth, async (req, res) => {
     const { sub } = req.user;
 
     try {
+        const db = await dbPromise
         await db.insert(serverMembers).values({
             serverId,
             userId: sub,
@@ -96,6 +100,7 @@ router.get("/:serverId/members", requireAuth, async (req, res) => {
     const { serverId } = req.params;
 
     try {
+        const db = await dbPromise
         const members = await db.execute(`
       SELECT u.id, u.email, u.username, sm.role, sm.joined_at
       FROM users u
@@ -118,6 +123,7 @@ router.delete("/:serverId", requireAuth, async (req, res) => {
     const { serverId } = req.params;
 
     try {
+        const db = await dbPromise
         const [server] = await db.select().from(servers).where(eq(servers.id, serverId));
 
         if (!server) return res.status(404).json({ error: "Server not found" });
